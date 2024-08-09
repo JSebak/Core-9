@@ -1,0 +1,16 @@
+C:\source\Core\Business\bin\Debug\net8.0\Business.deps.json
+C:\source\Core\Business\bin\Debug\net8.0\Business.dll
+C:\source\Core\Business\bin\Debug\net8.0\Business.pdb
+C:\source\Core\Business\bin\Debug\net8.0\Domain.dll
+C:\source\Core\Business\bin\Debug\net8.0\Domain.pdb
+C:\source\Core\Business\obj\Debug\net8.0\Business.csproj.AssemblyReference.cache
+C:\source\Core\Business\obj\Debug\net8.0\Business.GeneratedMSBuildEditorConfig.editorconfig
+C:\source\Core\Business\obj\Debug\net8.0\Business.AssemblyInfoInputs.cache
+C:\source\Core\Business\obj\Debug\net8.0\Business.AssemblyInfo.cs
+C:\source\Core\Business\obj\Debug\net8.0\Business.csproj.CoreCompileInputs.cache
+C:\source\Core\Business\obj\Debug\net8.0\Business.csproj.Up2Date
+C:\source\Core\Business\obj\Debug\net8.0\Business.dll
+C:\source\Core\Business\obj\Debug\net8.0\refint\Business.dll
+C:\source\Core\Business\obj\Debug\net8.0\Business.pdb
+C:\source\Core\Business\obj\Debug\net8.0\ref\Business.dll
+C:\source\Core\Business\obj\Debug\net8.0\Business.sourcelink.json
