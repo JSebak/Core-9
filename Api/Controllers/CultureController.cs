@@ -14,8 +14,8 @@
         {
             _localizer = localizer;
         }
-        [HttpPost("SetCulture")]
-        public IActionResult SetCulture([FromQuery] string culture)
+        [HttpPost("SetCulture/{culture}")]
+        public IActionResult SetCulture(string culture)
         {
             if (string.IsNullOrEmpty(culture))
             {
