@@ -11,7 +11,8 @@ namespace Domain.Entities
         public string Password { get; private set; }
         public string Email { get; private set; }
         public UserRole Role { get; private set; }
-        public int? ParentUserId { get; set; } = null;
+        public int? ParentUserId { get; private set; }
+        public bool Active { get; private set; }
 
         #region Navigation Properties
 
@@ -20,7 +21,7 @@ namespace Domain.Entities
 
         #endregion
 
-        public User(string username, string password, string email, UserRole role, int? ParentUserId = null)
+        public User(string username, string password, string email, UserRole role, int? parentUserId = null, bool active = false)
         {
             ValidateUsername(username);
             ValidatePassword(password);
@@ -32,9 +33,18 @@ namespace Domain.Entities
             Password = password;
             Email = email;
             Role = role;
-            this.ParentUserId = ParentUserId;
+            this.ParentUserId = parentUserId;
+            Active = active;
         }
 
+        public void ActivateUser()
+        {
+            Active = true;
+        }
+        public void DeactivateUser()
+        {
+            Active = false;
+        }
         public static UserRole ConvertToUserRole(string roleString)
         {
             if (Enum.TryParse(roleString, true, out UserRole role) && Enum.IsDefined(typeof(UserRole), role))

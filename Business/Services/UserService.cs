@@ -10,12 +10,12 @@ namespace Business.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly EmailService _mailService;
+        private readonly IEmailService _mailService;
         private readonly ITokenService _tokenService;
         private readonly ILogger<UserService> _logger;
         private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, EmailService mailService, ITokenService tokenService, ILogger<UserService> logger, IMapper mapper)
+        public UserService(IUserRepository userRepository, IEmailService mailService, ITokenService tokenService, ILogger<UserService> logger, IMapper mapper)
         {
             _userRepository = userRepository;
             _mailService = mailService;
@@ -243,6 +243,44 @@ namespace Business.Services
             catch (Exception)
             {
                 throw;
+            }
+        }
+
+        public async Task ChangeActivation(int id, bool active)
+        {
+            try
+            {
+                var user = await _userRepository.GetById(id);
+                if (user == null)
+                    throw new KeyNotFoundException("User not found");
+
+                if (user.Active != active)
+                {
+                    if (!user.Active)
+                    {
+                        user.ActivateUser();
+                    }
+                    else
+                    {
+                        user.DeactivateUser();
+                    }
+                    await _userRepository.Update(user);
+                }
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
+                throw;
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the user with ID {UserId}.", id);
+                throw new Exception("An error occurred while updating the user.", ex);
             }
         }
     }

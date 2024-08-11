@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Data
@@ -16,27 +17,45 @@ namespace Infrastructure.Data
 
         public async Task Seed()
         {
+            // Ensure the database is created.
             _context.Database.EnsureCreated();
+
+            // Check if there are any users in the database. If yes, exit early.
+            if (_context.Users.Any())
+            {
+                return; // No need to seed if data already exists.
+            }
+
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    if (!_context.Users.Any())
+                    var users = new List<User>
                     {
-                        var users = new List<User>
-                        {
-                            new User(username: "SuperAdmin", password: "Admin.123!", email: "superadmin@admin.com", role: Domain.Enums.UserRole.Super),
-                            new User(username: "Admin", password: "Admin.123!", email: "admin@admin.com", role: Domain.Enums.UserRole.Admin),
-                            new User(username: "Guest", password: "Admin.123!", email: "guest@admin.com", role: Domain.Enums.UserRole.User),
-                        };
+                        new("SuperAdmin", HashPassword("Admin123!"), "superadmin@core.com", Domain.Enums.UserRole.Super, null, true),
+                        new("Admin", HashPassword("Admin123!"), "admin@core.com", Domain.Enums.UserRole.Admin, null, true),
+                        new("Guest", HashPassword("Admin123!"), "guest@core.com", Domain.Enums.UserRole.User, null, true),
+                        new("Company1", HashPassword("Admin123!"), "company1@core.com", Domain.Enums.UserRole.Admin, null, true),
+                    };
 
-                        users.ForEach(user =>
-                        {
-                            user.UpdatePassword(BCrypt.Net.BCrypt.HashPassword(user.Password));
-                        });
+                    await _context.ResetPrimaryKeyAutoIncrementAsync();
 
-                        await _context.ResetPrimaryKeyAutoIncrementAsync();
-                        _context.Users.AddRange(users);
+                    await _context.Users.AddRangeAsync(users);
+                    await _context.SaveChangesAsync();
+
+                    var company1 = await _context.Users.FirstOrDefaultAsync(u => u.Username == "Company1");
+                    if (company1 != null)
+                    {
+                        var employee = new User(
+                            username: "Employee1",
+                            password: HashPassword("Admin123!"),
+                            email: "employee1@core.com",
+                            role: Domain.Enums.UserRole.User,
+                            parentUserId: company1.Id,
+                            active: true
+                        );
+
+                        _context.Users.Add(employee);
                         await _context.SaveChangesAsync();
                     }
 
@@ -46,10 +65,14 @@ namespace Infrastructure.Data
                 {
                     _logger.LogError(ex, "An error occurred while seeding the database.");
                     await transaction.RollbackAsync();
-
                     throw new Exception("Database seeding failed. The transaction has been rolled back.", ex);
                 }
             }
+        }
+
+        private string HashPassword(string password)
+        {
+            return BCrypt.Net.BCrypt.HashPassword(password);
         }
     }
 }

@@ -14,5 +14,6 @@ namespace Domain.Interfaces
         Task<IEnumerable<UserDetailsDto>> GetChildren(int userId);
         Task CreateCompanyUser(int parentId, UserRegistrationModel updateModel);
         Task<UserDetailsDto> GetParent(int userId);
+        Task ChangeActivation(int id, bool active);
     }
 }

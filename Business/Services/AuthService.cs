@@ -93,7 +93,11 @@ namespace Business.Services
 
             var id = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
 
-
+            if (string.IsNullOrEmpty(id)) throw new Exception();
+            var user = _mapper.Map<User>(await _userService.GetUserById(int.Parse(id)));
+            user.ActivateUser();
+            await _userService.ChangeActivation(user.Id, true);
+            return;
         }
     }
 }
