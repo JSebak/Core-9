@@ -82,6 +82,18 @@ namespace Business.Services
 
         }
 
+        public async Task VerifyAccount(string token)
+        {
+            if (!_tokenService.ValidateToken(token))
+            {
+                throw new Exception();
+            }
 
+            var claims = await GetClaims(token);
+
+            var id = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+
+
+        }
     }
 }

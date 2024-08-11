@@ -75,5 +75,20 @@ namespace Api.Controllers
                 return StatusCode(500, _localizer["UnexpectedError"].Value ?? "An error occurred while processing your request.");
             }
         }
+
+        [HttpPost("verify")]
+        public async Task<IActionResult> Verify([FromQuery] string token)
+        {
+            try
+            {
+                await _authService.VerifyAccount(token);
+                return Ok();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
     }
 }
