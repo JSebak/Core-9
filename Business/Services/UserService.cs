@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Business.Interfaces;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Models;
@@ -9,12 +10,16 @@ namespace Business.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly EmailService _mailService;
+        private readonly ITokenService _tokenService;
         private readonly ILogger<UserService> _logger;
         private readonly IMapper _mapper;
 
-        public UserService(IUserRepository userRepository, ILogger<UserService> logger, IMapper mapper)
+        public UserService(IUserRepository userRepository, EmailService mailService, ITokenService tokenService, ILogger<UserService> logger, IMapper mapper)
         {
             _userRepository = userRepository;
+            _mailService = mailService;
+            _tokenService = tokenService;
             _logger = logger;
             _mapper = mapper;
         }
@@ -79,6 +84,9 @@ namespace Business.Services
                 user.UpdatePassword(hashedPassword);
 
                 await _userRepository.Add(user);
+                var token = _tokenService.GenerateToken(user);
+                var verificationLink = $"https://localhost:7279/Auth/verify?token={token}";
+                await _mailService.SendEmailAsync(user.Email, "Account Verification", verificationLink);
             }
             catch (InvalidDataException)
             {
@@ -105,7 +113,7 @@ namespace Business.Services
                     throw new KeyNotFoundException("User not found");
 
                 var isUpdated = false;
-                var updatedUserRole = User.ConvertToUserRole(updatedUser.Role);
+
                 if (!string.IsNullOrEmpty(updatedUser.Email) && user.Email != updatedUser.Email)
                 {
                     user.UpdateEmail(updatedUser.Email);
@@ -122,10 +130,14 @@ namespace Business.Services
                     user.UpdatePassword(hashedPassword);
                     isUpdated = true;
                 }
-                if (!string.IsNullOrEmpty(updatedUser.Role) && user.Role != updatedUserRole)
+                if (!string.IsNullOrEmpty(updatedUser.Role))
                 {
-                    user.ChangeRole(updatedUserRole);
-                    isUpdated = true;
+                    var updatedUserRole = User.ConvertToUserRole(updatedUser.Role);
+                    if (user.Role != updatedUserRole)
+                    {
+                        user.ChangeRole(updatedUserRole);
+                        isUpdated = true;
+                    }
                 }
 
                 if (isUpdated)
@@ -165,6 +177,73 @@ namespace Business.Services
                 throw;
             }
 
+        }
+
+        public async Task<IEnumerable<UserDetailsDto>> GetChildren(int userId)
+        {
+            try
+            {
+                var list = (await _userRepository.GetChildren(userId)).Select(_mapper.Map<UserDetailsDto>);
+                return list;
+
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task CreateCompanyUser(int parentId, UserRegistrationModel userModel)
+        {
+            if (string.IsNullOrWhiteSpace(userModel.UserName) ||
+                string.IsNullOrWhiteSpace(userModel.Email) ||
+                string.IsNullOrWhiteSpace(userModel.Password) ||
+                string.IsNullOrWhiteSpace(userModel.Role))
+            {
+                throw new ArgumentException("All fields are required");
+            }
+
+            try
+            {
+                var existingUser = await _userRepository.GetByEmail(userModel.Email);
+                var existingUserByUsername = await _userRepository.GetByUserName(userModel.UserName);
+
+                if (existingUser != null || existingUserByUsername != null)
+                    throw new InvalidDataException("User already exists");
+
+                var user = new User(userModel.UserName, userModel.Password, userModel.Email, User.ConvertToUserRole(userModel.Role), parentId);
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(userModel.Password);
+                user.UpdatePassword(hashedPassword);
+
+                await _userRepository.Add(user);
+            }
+            catch (InvalidDataException)
+            {
+                throw;
+            }
+            catch (ArgumentException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var message = $"An error occurred while registering the user with Email {userModel.Email}.";
+                _logger.LogError(ex, message);
+                throw new Exception(message, ex);
+            }
+        }
+
+        public async Task<UserDetailsDto> GetParent(int userId)
+        {
+            try
+            {
+                var parent = _mapper.Map<UserDetailsDto>(await _userRepository.GetParent(userId));
+                return parent;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
     }
 }

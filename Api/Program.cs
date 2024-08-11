@@ -41,18 +41,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<UserDbContext>(options =>
     options.UseSqlite(connectionString));
 
-//#region AzureAd
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-
-//builder.Services.AddAuthorization(options =>
-//{
-//    options.AddPolicy("super", policy => policy.RequireRole("super"));
-//    options.AddPolicy("admin", policy => policy.RequireRole("admin"));
-//    options.AddPolicy("user", policy => policy.RequireRole("user"));
-//});
-//#endregion
-
 #region JWT
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -106,7 +94,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 

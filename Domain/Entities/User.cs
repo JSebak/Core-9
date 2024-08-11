@@ -1,4 +1,5 @@
 ﻿using Domain.Enums;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Domain.Entities
@@ -10,18 +11,28 @@ namespace Domain.Entities
         public string Password { get; private set; }
         public string Email { get; private set; }
         public UserRole Role { get; private set; }
+        public int? ParentUserId { get; set; } = null;
 
-        public User(string username, string password, string email, UserRole role)
+        #region Navigation Properties
+
+        [JsonIgnore]
+        public virtual ICollection<User> ChildUsers { get; set; } = new List<User>();
+
+        #endregion
+
+        public User(string username, string password, string email, UserRole role, int? ParentUserId = null)
         {
             ValidateUsername(username);
             ValidatePassword(password);
             ValidateEmail(email);
             ValidateRole(role);
+            ValidateParentId(ParentUserId);
 
             Username = username;
             Password = password;
             Email = email;
             Role = role;
+            this.ParentUserId = ParentUserId;
         }
 
         public static UserRole ConvertToUserRole(string roleString)
@@ -95,6 +106,12 @@ namespace Domain.Entities
         {
             if (!Enum.IsDefined(typeof(UserRole), role))
                 throw new ArgumentException("Invalid role", nameof(role));
+        }
+
+        private void ValidateParentId(int? parentId)
+        {
+            if (parentId != null)
+                if (parentId <= 0) throw new ArgumentException("Invalid parent Id", nameof(parentId));
         }
     }
 }

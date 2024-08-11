@@ -4,10 +4,11 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Models;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
 
 namespace Business.Services
 {
-    public class AuthService
+    public class AuthService : IAuthService
     {
         private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
@@ -57,5 +58,30 @@ namespace Business.Services
                 throw new Exception("An error occurred during the login process. Please try again later.", ex);
             }
         }
+
+        public async Task<IEnumerable<Claim>> GetClaims(string token)
+        {
+            if (token == null)
+            {
+                throw new InvalidDataException();
+            }
+            try
+            {
+                var claims = _tokenService.GetTokenClaims(token);
+                if (claims == null || !claims.Any())
+                {
+
+                }
+                return claims;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+
+        }
+
+
     }
 }

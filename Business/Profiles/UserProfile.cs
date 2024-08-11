@@ -8,7 +8,9 @@ namespace Business.Profiles
     {
         public UserProfile()
         {
-            CreateMap<User, UserDetailsDto>().ReverseMap();
+            CreateMap<User, UserDetailsDto>()
+            .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()))
+            .ForMember(dest => dest.ParentId, opt => opt.MapFrom(src => src.ParentUserId)).ReverseMap();
         }
     }
 

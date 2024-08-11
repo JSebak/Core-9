@@ -69,5 +69,21 @@ namespace Business.Services
                 throw new Exception("An unexpected error occurred. Please try again later.", ex);
             }
         }
+
+        public IEnumerable<Claim> GetTokenClaims(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                var jwtToken = handler.ReadJwtToken(token);
+                return jwtToken.Claims;
+            }
+            catch (Exception)
+            {
+                // Log exception if needed
+                return null;
+            }
+        }
     }
 }

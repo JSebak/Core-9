@@ -10,7 +10,16 @@ namespace Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            #region Relationships
+            modelBuilder.Entity<User>()
+               .HasMany(u => u.ChildUsers)
+               .WithOne()
+               .HasForeignKey(u => u.ParentUserId);
+            #endregion
         }
+
+
 
         public async Task ResetPrimaryKeyAutoIncrementAsync()
         {

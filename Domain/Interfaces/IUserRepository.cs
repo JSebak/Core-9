@@ -11,5 +11,9 @@ namespace Domain.Interfaces
         Task Add(User user);
         Task Update(User user);
         Task Delete(int id);
+
+        Task<IEnumerable<User>> GetChildren(int userId);
+        Task<IEnumerable<User>> GetCompanyAdmins();
+        Task<User> GetParent(int id);
     }
 }

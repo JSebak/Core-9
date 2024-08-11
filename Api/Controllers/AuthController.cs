@@ -1,4 +1,4 @@
-﻿using Business.Services;
+﻿using Business.Interfaces;
 using Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -9,11 +9,11 @@ namespace Api.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         private readonly ILogger<AuthController> _logger;
         private readonly IStringLocalizer<AuthController> _localizer;
 
-        public AuthController(AuthService authService, ILogger<AuthController> logger, IStringLocalizer<AuthController> localizer)
+        public AuthController(IAuthService authService, ILogger<AuthController> logger, IStringLocalizer<AuthController> localizer)
         {
             _authService = authService;
             _localizer = localizer;

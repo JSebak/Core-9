@@ -366,3 +366,12 @@ FodyWeavers.xsd
 
 Api/[Bb]in/*
 
+/Infrastructure/obj/Debug/net9.0/Infrastructure.csproj.CoreCompileInputs.cache
+/Api/sqlite.db
+/Domain/obj/Debug/net9.0/Domain.csproj.CoreCompileInputs.cache
+/Api/bin/Debug/net9.0/Api.deps.json
+/Api/bin/Debug/net9.0/appsettings.json
+/Api/obj/Debug/net9.0/Api.csproj.CoreCompileInputs.cache
+/Business/bin/Debug/net9.0/Business.deps.json
+/CoreTests/obj/Debug/net9.0/CoreTests.csproj.FileListAbsolute.txt
+/Api/appsettings.json

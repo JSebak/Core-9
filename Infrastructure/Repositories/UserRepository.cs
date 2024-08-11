@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -157,6 +158,60 @@ namespace Infrastructure.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while retrieving the user with Username {UserName}.", userName);
+                throw new Exception("An error occurred while retrieving the user.", ex);
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetChildren(int userId)
+        {
+            try
+            {
+                return await _context.Users.Where(u => u.ParentUserId == userId).ToListAsync();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<User>> GetCompanyAdmins()
+        {
+            try
+            {
+                var admins = await _context.Users.Where(u => u.Role == UserRole.Admin).ToListAsync();
+                return admins;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public async Task<User> GetParent(int id)
+        {
+            if (id <= 0)
+                throw new ArgumentException("Invalid user id");
+
+            try
+            {
+                var child = await GetById(id);
+                if (child == null)
+                {
+                    throw new Exception();
+                }
+                else
+                {
+                    if (child.ParentUserId == null)
+                    {
+                        return null;
+                    }
+                    return await GetById(child.ParentUserId.Value);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving the parent for the user with id {id}.", id);
                 throw new Exception("An error occurred while retrieving the user.", ex);
             }
         }

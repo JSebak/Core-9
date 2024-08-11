@@ -1,4 +1,5 @@
-﻿using Domain.Interfaces;
+﻿using Business.Interfaces;
+using Domain.Interfaces;
 using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,21 +8,25 @@ using Microsoft.Extensions.Localization;
 namespace Api.Controllers
 {
     [ApiController]
+    [ApiExplorerSettings(GroupName = "User")]
     [Route("[controller]")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAuthService _authService;
         private readonly ILogger<UserController> _logger;
         private readonly IStringLocalizer<UserController> _localizer;
 
-        public UserController(IUserService userService, ILogger<UserController> logger, IStringLocalizer<UserController> localizer)
+        public UserController(IUserService userService, IAuthService authService, ILogger<UserController> logger, IStringLocalizer<UserController> localizer)
         {
             _userService = userService;
+            _authService = authService;
             _logger = logger;
             _localizer = localizer;
         }
+
         [Authorize(Roles = "Admin,Super")]
-        [HttpGet(Name = "Get Users", Order = 1)]
+        [HttpGet(Name = "Get Users")]
         public async Task<ActionResult> GetAll()
         {
             try
@@ -37,7 +42,7 @@ namespace Api.Controllers
         }
 
         [Authorize]
-        [HttpGet("{id}", Name = "Get By Id", Order = 2)]
+        [HttpGet("{id}", Name = "Get By Id")]
         public async Task<ActionResult> Get(int id)
         {
             try
@@ -62,7 +67,7 @@ namespace Api.Controllers
             }
         }
 
-        [HttpPost(Name = "Register User", Order = 3)]
+        [HttpPost(Name = "Register User")]
         public async Task<ActionResult> Register([FromBody] UserRegistrationModel user)
         {
             try
@@ -82,8 +87,8 @@ namespace Api.Controllers
             }
         }
 
-        [Authorize(Roles = "Admin,Super")]
-        [HttpDelete("{id}", Name = "Delete Id", Order = 5)]
+        [Authorize(Roles = "Super")]
+        [HttpDelete("{id}", Name = "Delete Id")]
         public async Task<ActionResult> Delete(int id)
         {
             try
@@ -103,8 +108,8 @@ namespace Api.Controllers
             }
         }
 
-        [Authorize(Roles = "admin,super")]
-        [HttpPost("{id}", Name = "Update User", Order = 4)]
+        [Authorize(Roles = "Super")]
+        [HttpPost("{id}", Name = "Update User")]
         public async Task<ActionResult> Update(int id, [FromBody] UserUpdateModel updatedUser)
         {
             try
@@ -128,5 +133,175 @@ namespace Api.Controllers
                 return StatusCode(500, new { message = _localizer["ErrorUpdatingUser"].Value });
             }
         }
+
+        #region new feature
+
+        [Authorize]
+        [HttpDelete("Delete", Name = "Delete my user")]
+        public async Task<ActionResult> DeleteMyUser()
+        {
+            try
+            {
+                if (Request.Cookies.TryGetValue("AuthToken", out var authCookieValue))
+                {
+                    var claims = await _authService.GetClaims(authCookieValue);
+                    var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+                    if (!string.IsNullOrEmpty(stringId))
+                    {
+                        await _userService.DeleteUser(int.Parse(stringId));
+                    }
+                    return Ok();
+                }
+                else
+                {
+                    //_logger.LogWarning("Company with ID {UserId} not found.", id);
+                    return StatusCode(401, _localizer["ErrorRetrievingUser"].Value);
+                }
+            }
+            catch (KeyNotFoundException ex)
+            {
+                //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
+                return StatusCode(500, _localizer["ErrorRetrievingUser"].Value);
+            }
+        }
+
+        [Authorize]
+        [HttpPost("Update", Name = "Update my user")]
+        public async Task<ActionResult> UpdateMyUser([FromBody] UserUpdateModel updateModel)
+        {
+            try
+            {
+                if (Request.Cookies.TryGetValue("AuthToken", out var authCookieValue))
+                {
+                    var claims = await _authService.GetClaims(authCookieValue);
+                    var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+                    if (!string.IsNullOrEmpty(stringId))
+                    {
+                        await _userService.UpdateUser(int.Parse(stringId), updateModel);
+                    }
+                    return Ok();
+                }
+                else
+                {
+                    //_logger.LogWarning("Company with ID {UserId} not found.", id);
+                    return StatusCode(401, _localizer["ErrorRetrievingUser"].Value);
+                }
+            }
+            catch (KeyNotFoundException ex)
+            {
+                //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
+                return StatusCode(500, _localizer["ErrorRetrievingUser"].Value);
+            }
+        }
+
+        [Authorize(Roles = "Admin,Super")]
+        [HttpGet("company/{id}", Name = "Get company users")]
+        public async Task<ActionResult> GetChilds(int id)
+        {
+            try
+            {
+                var childList = await _userService.GetChildren(id);
+                if (childList == null)
+                {
+                    _logger.LogWarning("Company with ID {UserId} not found.", id);
+                    return NotFound(new { message = _localizer["UserNotFound"].Value });
+                }
+                return Ok(childList);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
+                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("Company", Name = "Register company child")]
+        public async Task<ActionResult> RegisterChild([FromBody] UserRegistrationModel registrationModel)
+        {
+            try
+            {
+                if (Request.Cookies.TryGetValue("AuthToken", out var authCookieValue))
+                {
+                    var claims = await _authService.GetClaims(authCookieValue);
+                    var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+                    if (!string.IsNullOrEmpty(stringId))
+                    {
+
+                        await _userService.CreateCompanyUser(int.Parse(stringId), registrationModel);
+                    }
+                    return Ok();
+                }
+                else
+                {
+                    throw new Exception();
+                }
+            }
+            //catch (KeyNotFoundException ex)
+            //{
+            //    //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
+            //    return NotFound(new { message = ex.Message });
+            //}
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
+                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+            }
+        }
+
+        [Authorize(Roles = "User")]
+        [HttpGet("Company", Name = "Parent company info ")]
+        public async Task<ActionResult> GetParent()
+        {
+            try
+            {
+                if (Request.Cookies.TryGetValue("AuthToken", out var authCookieValue))
+                {
+                    var claims = await _authService.GetClaims(authCookieValue);
+                    var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+                    if (!string.IsNullOrEmpty(stringId))
+                    {
+                        return Ok(await _userService.GetParent(int.Parse(stringId)));
+                    }
+                    else
+                    {
+                        throw new Exception();
+                    }
+
+                }
+                else
+                {
+                    throw new Exception();
+                }
+            }
+            //catch (KeyNotFoundException ex)
+            //{
+            //    //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
+            //    return NotFound(new { message = ex.Message });
+            //}
+            catch (Exception ex)
+            {
+                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
+                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+            }
+        }
+
+
+        #endregion
     }
 }
