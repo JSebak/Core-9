@@ -264,6 +264,36 @@ namespace Api.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPost("Resend", Name = "Resend activation link")]
+        public async Task<ActionResult> Resend()
+        {
+            try
+            {
+                if (Request.Cookies.TryGetValue("AuthToken", out var authCookieValue))
+                {
+                    var claims = await _authService.GetClaims(authCookieValue);
+                    var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+                    if (!string.IsNullOrEmpty(stringId))
+                    {
+                        await _userService.Resend(int.Parse(stringId));
+                        return Ok(_localizer["ResendSuccessfull"].Value ?? "Verification link resend successfully");
+                    }
+                }
+                _logger.LogWarning("AuthToken cookie is missing or invalid.");
+                return Unauthorized(_localizer["InvalidAuthToken"].Value);
+            }
+            catch (InvalidOperationException)
+            {
+                _logger.LogWarning("User already activated");
+                return StatusCode(400, _localizer["AlreadyActivated"].Value);
+            }
+            catch (Exception ex)
+            {
+                return HandleException(ex, "resending the code");
+            }
+        }
+
         #endregion
     }
 }

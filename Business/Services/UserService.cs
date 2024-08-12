@@ -315,5 +315,24 @@ namespace Business.Services
                 throw new Exception("An error occurred while fetching the parent.", ex);
             }
         }
+
+        public async Task Resend(int userId)
+        {
+            try
+            {
+                var user = await _userRepository.GetById(userId);
+
+                if (user == null)
+                    throw new InvalidDataException("User not found");
+                if (user.Active) throw new InvalidOperationException("User already activated");
+                var token = _tokenService.GenerateToken(user);
+                var verificationLink = $"https://localhost:7279/Auth/verify?token={token}";
+                await _mailService.SendEmailAsync(user.Email, "Account Verification", verificationLink);
+            }
+            catch (InvalidDataException)
+            {
+                throw;
+            }
+        }
     }
 }

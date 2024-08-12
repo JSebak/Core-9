@@ -15,5 +15,6 @@ namespace Domain.Interfaces
         Task CreateCompanyUser(int parentId, UserRegistrationModel updateModel);
         Task<UserDetailsDto> GetParent(int userId);
         Task ChangeActivation(int id, bool active);
+        Task Resend(int userId);
     }
 }

@@ -106,5 +106,6 @@ namespace Api.Controllers
                 return StatusCode(500, _localizer["UnexpectedError"].Value ?? "An error occurred while processing your request.");
             }
         }
+
     }
 }
