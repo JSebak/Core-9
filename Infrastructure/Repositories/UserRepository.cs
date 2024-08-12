@@ -34,12 +34,18 @@ namespace Infrastructure.Repositories
         public async Task Add(User user)
         {
             if (user == null)
+            {
+                _logger.LogWarning("Attempted to add a null user.");
                 throw new ArgumentNullException(nameof(user));
+            }
 
             try
             {
-                if (_context.Users.Any(u => u.Email == user.Email))
-                    throw new InvalidOperationException("User with the same email already exists");
+                if (await _context.Users.AnyAsync(u => u.Email == user.Email))
+                {
+                    _logger.LogWarning("Attempted to add a user with an existing email: {Email}", user.Email);
+                    throw new InvalidOperationException("User with the same email already exists.");
+                }
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
@@ -59,13 +65,19 @@ namespace Infrastructure.Repositories
         public async Task Delete(int id)
         {
             if (id <= 0)
+            {
+                _logger.LogWarning("Attempted to delete a user with an invalid ID: {Id}", id);
                 throw new ArgumentException("Invalid user ID", nameof(id));
+            }
 
             try
             {
                 var user = await _context.Users.FindAsync(id);
                 if (user == null)
+                {
+                    _logger.LogWarning("Attempted to delete a non-existent user with ID: {Id}", id);
                     throw new KeyNotFoundException("User not found");
+                }
 
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
@@ -85,11 +97,18 @@ namespace Infrastructure.Repositories
         public async Task<User?> GetById(int id)
         {
             if (id <= 0)
+            {
+                _logger.LogWarning("Attempted to retrieve a user with an invalid ID: {Id}", id);
                 throw new ArgumentException("Invalid user ID", nameof(id));
+            }
 
             try
             {
                 var user = await _context.Users.FindAsync(id);
+                if (user == null)
+                {
+                    _logger.LogWarning("User with ID {Id} not found.", id);
+                }
                 return user;
             }
             catch (Exception ex)
@@ -102,19 +121,22 @@ namespace Infrastructure.Repositories
         public async Task Update(User user)
         {
             if (user == null)
+            {
+                _logger.LogWarning("Attempted to update a null user.");
                 throw new ArgumentNullException(nameof(user));
+            }
 
             try
             {
-                if (_context.Users.Any(u => u.Id == user.Id))
+                var existingUser = await _context.Users.AnyAsync(u => u.Id == user.Id);
+                if (!existingUser)
                 {
-                    _context.Users.Update(user);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
+                    _logger.LogWarning("Attempted to update a non-existent user with ID: {Id}", user.Id);
                     throw new KeyNotFoundException("User not found");
                 }
+
+                _context.Users.Update(user);
+                await _context.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {
@@ -131,11 +153,18 @@ namespace Infrastructure.Repositories
         public async Task<User?> GetByEmail(string email)
         {
             if (string.IsNullOrEmpty(email))
+            {
+                _logger.LogWarning("Attempted to retrieve a user with an invalid email.");
                 throw new ArgumentException("Invalid user email", nameof(email));
+            }
 
             try
             {
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
+                if (user == null)
+                {
+                    _logger.LogWarning("User with email {Email} not found.", email);
+                }
                 return user;
             }
             catch (Exception ex)
@@ -148,11 +177,18 @@ namespace Infrastructure.Repositories
         public async Task<User?> GetByUserName(string userName)
         {
             if (string.IsNullOrEmpty(userName))
+            {
+                _logger.LogWarning("Attempted to retrieve a user with an invalid username.");
                 throw new ArgumentException("Invalid username", nameof(userName));
+            }
 
             try
             {
                 var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == userName);
+                if (user == null)
+                {
+                    _logger.LogWarning("User with username {UserName} not found.", userName);
+                }
                 return user;
             }
             catch (Exception ex)
@@ -168,9 +204,10 @@ namespace Infrastructure.Repositories
             {
                 return await _context.Users.Where(u => u.ParentUserId == userId).ToListAsync();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError(ex, "An error occurred while retrieving children for user ID {UserId}.", userId);
+                throw new Exception("An error occurred while retrieving children.", ex);
             }
         }
 
@@ -181,38 +218,41 @@ namespace Infrastructure.Repositories
                 var admins = await _context.Users.Where(u => u.Role == UserRole.Admin).ToListAsync();
                 return admins;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError(ex, "An error occurred while retrieving company admins.");
+                throw new Exception("An error occurred while retrieving company admins.", ex);
             }
         }
 
         public async Task<User> GetParent(int id)
         {
             if (id <= 0)
-                throw new ArgumentException("Invalid user id");
+            {
+                _logger.LogWarning("Attempted to retrieve a parent for a user with an invalid ID: {Id}", id);
+                throw new ArgumentException("Invalid user ID", nameof(id));
+            }
 
             try
             {
                 var child = await GetById(id);
                 if (child == null)
                 {
-                    throw new Exception();
-                }
-                else
-                {
-                    if (child.ParentUserId == null)
-                    {
-                        return null;
-                    }
-                    return await GetById(child.ParentUserId.Value);
+                    _logger.LogWarning("User with ID {Id} not found.", id);
+                    throw new KeyNotFoundException("User not found.");
                 }
 
+                if (child.ParentUserId == null)
+                {
+                    return null;
+                }
+
+                return await GetById(child.ParentUserId.Value);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while retrieving the parent for the user with id {id}.", id);
-                throw new Exception("An error occurred while retrieving the user.", ex);
+                _logger.LogError(ex, "An error occurred while retrieving the parent for user ID {Id}.", id);
+                throw new Exception("An error occurred while retrieving the parent user.", ex);
             }
         }
     }

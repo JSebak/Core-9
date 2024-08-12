@@ -74,15 +74,14 @@ namespace Business.Services
         public IEnumerable<Claim> GetTokenClaims(string token)
         {
             var handler = new JwtSecurityTokenHandler();
-
             try
             {
                 var jwtToken = handler.ReadJwtToken(token);
                 return jwtToken.Claims;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log exception if needed
+                _logger.LogError(ex, "An error occurred while retrieving the claims from the token.");
                 return null;
             }
         }

@@ -47,12 +47,17 @@ namespace Api.Controllers
                     Expires = DateTime.UtcNow.AddHours(1)
                 };
                 Response.Cookies.Append("AuthToken", token, cookieOptions);
-                return Ok(_localizer["LoginSuccessfull"].Value ?? "Login Successfull.");
+                return Ok(_localizer["LoginSuccessfull"].Value ?? "Login Successful.");
             }
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning(ex, "Unauthorized login attempt for user {Email}.", loginModel.Email);
                 return Unauthorized(_localizer["InvalidEmailPassword"].Value ?? "Invalid email or password.");
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid login attempt: {Message}.", ex.Message);
+                return BadRequest(_localizer["InvalidLogin"].Value ?? ex.Message);
             }
             catch (Exception ex)
             {
@@ -76,18 +81,29 @@ namespace Api.Controllers
             }
         }
 
-        [HttpPost("verify")]
+        [HttpPost("Verify")]
         public async Task<IActionResult> Verify([FromQuery] string token)
         {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                _logger.LogWarning("Verification attempt with missing or invalid token.");
+                return BadRequest(_localizer["InvalidToken"].Value ?? "Invalid token.");
+            }
+
             try
             {
                 await _authService.VerifyAccount(token);
-                return Ok();
+                return Ok(_localizer["AccountVerified"].Value ?? "Account verified successfully.");
             }
-            catch (Exception)
+            catch (UnauthorizedAccessException ex)
             {
-
-                throw;
+                _logger.LogWarning(ex, "Unauthorized account verification attempt with token {Token}.", token);
+                return Unauthorized(_localizer["InvalidToken"].Value ?? "Invalid or expired token.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred during account verification with token {Token}.", token);
+                return StatusCode(500, _localizer["UnexpectedError"].Value ?? "An error occurred while processing your request.");
             }
         }
     }

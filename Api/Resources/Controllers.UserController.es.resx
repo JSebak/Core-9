@@ -129,4 +129,26 @@
   <data name="InvalidCulture" xml:space="preserve">
     <value>Cultura invalida.</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="ErrorDeletingUser" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Actualizado con exito.</value>
+  </data>
+  <data name="DeletedSuccessfully" xml:space="preserve">
+    <value>Borrado con exito.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Usuario no encontrado.</value>
+  </data>
+  <data name="ErrorRetrievingUser" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="CompanyNotFound" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="InvalidAuthToken" xml:space="preserve">
+    <value>Token invalido.</value>
+  </data>
 </root>

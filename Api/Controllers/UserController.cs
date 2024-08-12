@@ -4,6 +4,7 @@ using Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
+using System.Net;
 
 namespace Api.Controllers
 {
@@ -25,6 +26,18 @@ namespace Api.Controllers
             _localizer = localizer;
         }
 
+        private ActionResult HandleException(Exception ex, string action)
+        {
+            _logger.LogError(ex, $"An error occurred while {action}.");
+            return StatusCode((int)HttpStatusCode.InternalServerError, _localizer["ErrorOccured"].Value);
+        }
+
+        private ActionResult HandleNotFoundException(KeyNotFoundException ex, string id, string entityName)
+        {
+            _logger.LogWarning(ex, $"{entityName} with ID {id} not found.");
+            return NotFound(_localizer["NotFound"].Value ?? $"{entityName} with ID {id} not found.");
+        }
+
         [Authorize(Roles = "Admin,Super")]
         [HttpGet(Name = "Get Users")]
         public async Task<ActionResult> GetAll()
@@ -36,8 +49,7 @@ namespace Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while retrieving users.");
-                return StatusCode(500, new { message = _localizer["ErrorRetrievingUsers"].Value });
+                return HandleException(ex, "retrieving users");
             }
         }
 
@@ -50,20 +62,17 @@ namespace Api.Controllers
                 var user = await _userService.GetUserById(id);
                 if (user == null)
                 {
-                    _logger.LogWarning("User with ID {UserId} not found.", id);
-                    return NotFound(new { message = _localizer["UserNotFound"].Value });
+                    return HandleNotFoundException(new KeyNotFoundException(), id.ToString(), "User");
                 }
                 return Ok(user);
             }
             catch (KeyNotFoundException ex)
             {
-                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                return HandleNotFoundException(ex, id.ToString(), "User");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while retrieving the user with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+                return HandleException(ex, $"retrieving the user with ID {id}");
             }
         }
 
@@ -78,12 +87,11 @@ namespace Api.Controllers
             catch (ArgumentException ex)
             {
                 _logger.LogWarning(ex, "Invalid input for user registration.");
-                return BadRequest(_localizer["Registered"].Value ?? ex.Message);
+                return BadRequest(new { message = _localizer["InvalidInput"].Value ?? ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while registering the user.");
-                return StatusCode(500, _localizer["ErrorRegisteringUser"].Value ?? "An error occurred while registering the user.");
+                return HandleException(ex, "registering the user");
             }
         }
 
@@ -98,13 +106,11 @@ namespace Api.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                return HandleNotFoundException(ex, id.ToString(), "User");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while deleting the user with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorDeletingUser"].Value });
+                return HandleException(ex, $"deleting the user with ID {id}");
             }
         }
 
@@ -119,18 +125,16 @@ namespace Api.Controllers
             }
             catch (KeyNotFoundException ex)
             {
-                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                return HandleNotFoundException(ex, id.ToString(), "User");
             }
             catch (ArgumentException ex)
             {
                 _logger.LogWarning(ex, "Invalid input for user with ID {UserId}.", id);
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(_localizer["ErrorUpdatingUser"].Value ?? "Invalid input for user");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while updating the user with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorUpdatingUser"].Value });
+                return HandleException(ex, $"updating the user with ID {id}");
             }
         }
 
@@ -146,27 +150,20 @@ namespace Api.Controllers
                 {
                     var claims = await _authService.GetClaims(authCookieValue);
                     var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
+
                     if (!string.IsNullOrEmpty(stringId))
                     {
-                        await _userService.DeleteUser(int.Parse(stringId));
+                        int id = int.Parse(stringId);
+                        await _userService.DeleteUser(id);
+                        return Ok(_localizer["DeletedSuccessfully"].Value ?? "Deleted Successfully.");
                     }
-                    return Ok();
                 }
-                else
-                {
-                    //_logger.LogWarning("Company with ID {UserId} not found.", id);
-                    return StatusCode(401, _localizer["ErrorRetrievingUser"].Value);
-                }
-            }
-            catch (KeyNotFoundException ex)
-            {
-                //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                _logger.LogWarning("AuthToken cookie is missing or invalid.");
+                return Unauthorized(new { message = _localizer["InvalidAuthToken"].Value });
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
-                return StatusCode(500, _localizer["ErrorRetrievingUser"].Value);
+                return HandleException(ex, "deleting the user");
             }
         }
 
@@ -183,24 +180,15 @@ namespace Api.Controllers
                     if (!string.IsNullOrEmpty(stringId))
                     {
                         await _userService.UpdateUser(int.Parse(stringId), updateModel);
+                        return Ok();
                     }
-                    return Ok();
                 }
-                else
-                {
-                    //_logger.LogWarning("Company with ID {UserId} not found.", id);
-                    return StatusCode(401, _localizer["ErrorRetrievingUser"].Value);
-                }
-            }
-            catch (KeyNotFoundException ex)
-            {
-                //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                _logger.LogWarning("AuthToken cookie is missing or invalid.");
+                return Unauthorized(_localizer["InvalidAuthToken"].Value);
             }
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
-                return StatusCode(500, _localizer["ErrorRetrievingUser"].Value);
+                return HandleException(ex, "updating the user");
             }
         }
 
@@ -213,20 +201,17 @@ namespace Api.Controllers
                 var childList = await _userService.GetChildren(id);
                 if (childList == null)
                 {
-                    _logger.LogWarning("Company with ID {UserId} not found.", id);
-                    return NotFound(new { message = _localizer["UserNotFound"].Value });
+                    return HandleNotFoundException(new KeyNotFoundException(), id.ToString(), "Company");
                 }
                 return Ok(childList);
             }
             catch (KeyNotFoundException ex)
             {
-                _logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
-                return NotFound(new { message = ex.Message });
+                return HandleNotFoundException(ex, id.ToString(), "Company");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+                return HandleException(ex, $"retrieving the company with ID {id}");
             }
         }
 
@@ -242,30 +227,21 @@ namespace Api.Controllers
                     var stringId = claims.FirstOrDefault(c => c.Type.Contains("nameidentifier"))?.Value;
                     if (!string.IsNullOrEmpty(stringId))
                     {
-
                         await _userService.CreateCompanyUser(int.Parse(stringId), registrationModel);
+                        return Ok(_localizer["Registered"].Value ?? "Registered.");
                     }
-                    return Ok();
                 }
-                else
-                {
-                    throw new Exception();
-                }
+                _logger.LogWarning("AuthToken cookie is missing or invalid.");
+                return Unauthorized(_localizer["InvalidAuthToken"].Value);
             }
-            //catch (KeyNotFoundException ex)
-            //{
-            //    //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
-            //    return NotFound(new { message = ex.Message });
-            //}
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+                return HandleException(ex, "registering the company child");
             }
         }
 
         [Authorize(Roles = "User")]
-        [HttpGet("Company", Name = "Parent company info ")]
+        [HttpGet("Company", Name = "Parent company info")]
         public async Task<ActionResult> GetParent()
         {
             try
@@ -278,29 +254,15 @@ namespace Api.Controllers
                     {
                         return Ok(await _userService.GetParent(int.Parse(stringId)));
                     }
-                    else
-                    {
-                        throw new Exception();
-                    }
-
                 }
-                else
-                {
-                    throw new Exception();
-                }
+                _logger.LogWarning("AuthToken cookie is missing or invalid.");
+                return Unauthorized(_localizer["InvalidAuthToken"].Value);
             }
-            //catch (KeyNotFoundException ex)
-            //{
-            //    //_logger.LogWarning(ex, "Company with ID {UserId} not found.", id);
-            //    return NotFound(new { message = ex.Message });
-            //}
             catch (Exception ex)
             {
-                //_logger.LogError(ex, "An error occurred while retrieving the company with ID {UserId}.", id);
-                return StatusCode(500, new { message = _localizer["ErrorRetrievingUser"].Value });
+                return HandleException(ex, "retrieving parent company info");
             }
         }
-
 
         #endregion
     }

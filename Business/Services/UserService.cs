@@ -30,9 +30,10 @@ namespace Business.Services
             {
                 return (await _userRepository.GetAll()).Select(user => new UserDto { Id = user.Id, Username = user.Username });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError(ex, "An error occurred while fetching all users.");
+                throw new Exception("An error occurred while fetching all users.", ex);
             }
         }
 
@@ -40,11 +41,20 @@ namespace Business.Services
         {
             try
             {
-                return _mapper.Map<UserDetailsDto>(await _userRepository.GetById(id));
+                var user = await _userRepository.GetById(id);
+                if (user == null)
+                    throw new KeyNotFoundException("User not found");
+                return _mapper.Map<UserDetailsDto>(user);
             }
-            catch (Exception)
+            catch (KeyNotFoundException ex)
             {
+                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
                 throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching the user with ID {UserId}.", id);
+                throw new Exception("An error occurred while fetching the user.", ex);
             }
         }
 
@@ -52,12 +62,20 @@ namespace Business.Services
         {
             try
             {
-                return _mapper.Map<UserDetailsDto>(await _userRepository.GetByEmail(email));
+                var user = await _userRepository.GetByEmail(email);
+                if (user == null)
+                    throw new KeyNotFoundException("User not found");
+                return _mapper.Map<UserDetailsDto>(user);
             }
-            catch (Exception)
+            catch (KeyNotFoundException ex)
             {
-
+                _logger.LogWarning(ex, "User with Email {UserEmail} not found.", email);
                 throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching the user with Email {UserEmail}.", email);
+                throw new Exception("An error occurred while fetching the user.", ex);
             }
         }
 
@@ -171,12 +189,16 @@ namespace Business.Services
                     throw new KeyNotFoundException("User not found");
                 await _userRepository.Delete(id);
             }
-            catch (Exception)
+            catch (KeyNotFoundException ex)
             {
-
+                _logger.LogWarning(ex, "User with ID {UserId} not found.", id);
                 throw;
             }
-
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while deleting the user with ID {UserId}.", id);
+                throw new Exception("An error occurred while deleting the user.", ex);
+            }
         }
 
         public async Task<IEnumerable<UserDetailsDto>> GetChildren(int userId)
@@ -185,11 +207,11 @@ namespace Business.Services
             {
                 var list = (await _userRepository.GetChildren(userId)).Select(_mapper.Map<UserDetailsDto>);
                 return list;
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _logger.LogError(ex, "An error occurred while fetching the children for user with ID {UserId}.", userId);
+                throw new Exception("An error occurred while fetching the children.", ex);
             }
         }
 
@@ -233,25 +255,13 @@ namespace Business.Services
             }
         }
 
-        public async Task<UserDetailsDto> GetParent(int userId)
-        {
-            try
-            {
-                var parent = _mapper.Map<UserDetailsDto>(await _userRepository.GetParent(userId));
-                return parent;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
         public async Task ChangeActivation(int id, bool active)
         {
             try
             {
                 var user = await _userRepository.GetById(id);
                 if (user == null)
+
                     throw new KeyNotFoundException("User not found");
 
                 if (user.Active != active)
@@ -281,6 +291,28 @@ namespace Business.Services
             {
                 _logger.LogError(ex, "An error occurred while updating the user with ID {UserId}.", id);
                 throw new Exception("An error occurred while updating the user.", ex);
+            }
+        }
+
+        public async Task<UserDetailsDto> GetParent(int userId)
+        {
+            try
+            {
+                var parent = _mapper.Map<UserDetailsDto>(await _userRepository.GetParent(userId));
+                if (parent == null)
+                    throw new KeyNotFoundException("Parent user not found");
+
+                return parent;
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Parent user for User with ID {UserId} not found.", userId);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching the parent for user with ID {UserId}.", userId);
+                throw new Exception("An error occurred while fetching the parent.", ex);
             }
         }
     }

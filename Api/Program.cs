@@ -140,7 +140,6 @@ app.UseHttpsRedirection();
 var localizationOptions = app.Services.GetService<IOptions<RequestLocalizationOptions>>()!.Value;
 app.UseRequestLocalization(localizationOptions);
 
-//app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("AllowAllOrigins");
 
