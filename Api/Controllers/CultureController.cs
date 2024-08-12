@@ -10,15 +10,20 @@
     public class CultureController : ControllerBase
     {
         private readonly IStringLocalizer<UserController> _localizer;
-        public CultureController(IStringLocalizer<UserController> localizer)
+        private readonly ILogger<CultureController> _logger;
+
+        public CultureController(IStringLocalizer<UserController> localizer, ILogger<CultureController> logger)
         {
             _localizer = localizer;
+            _logger = logger;
         }
+
         [HttpPost("SetCulture/{culture}")]
         public IActionResult SetCulture(string culture)
         {
             if (string.IsNullOrEmpty(culture))
             {
+                _logger.LogWarning("SetCulture called with null or empty culture.");
                 return BadRequest(_localizer["RequiredCulture"].Value ?? "Culture is required.");
             }
 
@@ -36,11 +41,16 @@
 
                 return Ok(_localizer["CultureSetTo"].Value + culture ?? $"Culture set to {culture}");
             }
-            catch (CultureNotFoundException)
+            catch (CultureNotFoundException ex)
             {
-                return BadRequest(_localizer["InvalidCulture"] ?? "Invalid culture.");
+                _logger.LogWarning(ex, "Invalid culture '{Culture}' passed to SetCulture.", culture);
+                return BadRequest(_localizer["InvalidCulture"].Value ?? "Invalid culture.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while setting culture to '{Culture}'.", culture);
+                return StatusCode(500, _localizer["UnexpectedError"].Value ?? "An error occurred while processing your request.");
             }
         }
     }
-
 }

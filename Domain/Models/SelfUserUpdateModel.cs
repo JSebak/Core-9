@@ -1,6 +1,6 @@
 ﻿namespace Domain.Models
 {
-    public class UserUpdateModel
+    public class SelfUserUpdateModel
     {
         public string UserName { get; set; } = string.Empty;
 
@@ -8,8 +8,7 @@
 
         public string Password { get; set; } = string.Empty;
 
-        public string Role { get; set; } = string.Empty;
-        public int? ParentParentUserId { get; set; }
         public bool Active { get; set; }
+
     }
 }

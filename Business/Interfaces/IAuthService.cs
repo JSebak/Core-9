@@ -8,5 +8,7 @@ namespace Business.Interfaces
         Task<string?> Login(UserLoginModel userLoginModel);
 
         Task<IEnumerable<Claim>> GetClaims(string token);
+
+        Task VerifyAccount(string token);
     }
 }

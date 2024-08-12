@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Business.Interfaces;
 using Business.Services;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -14,13 +15,16 @@ namespace CoreTests.Services
         private readonly Mock<ILogger<UserService>> _loggerMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly UserService _userService;
-
+        private readonly Mock<IEmailService> _emailMock;
+        private readonly Mock<ITokenService> _tokenMock;
         public UserServiceTests()
         {
             _userRepositoryMock = new Mock<IUserRepository>();
             _loggerMock = new Mock<ILogger<UserService>>();
             _mapperMock = new Mock<IMapper>();
-            _userService = new UserService(_userRepositoryMock.Object, _loggerMock.Object, _mapperMock.Object);
+            _emailMock = new Mock<IEmailService>();
+            _tokenMock = new Mock<ITokenService>();
+            _userService = new UserService(_userRepositoryMock.Object, _emailMock.Object, _tokenMock.Object, _loggerMock.Object, _mapperMock.Object);
         }
 
         #region Create User
@@ -33,7 +37,7 @@ namespace CoreTests.Services
             {
                 UserName = "newUser",
                 Email = "new@example.com",
-                Password = "newPassword",
+                Password = "new123Password@",
                 Role = "User"
             };
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
@@ -63,11 +67,11 @@ namespace CoreTests.Services
             {
                 UserName = "existingUser",
                 Email = "existing@example.com",
-                Password = "password",
+                Password = "Password00@",
                 Role = "User"
             };
 
-            var existingUser = new User("existingUser", "hashedPassword", "existing@example.com", User.ConvertToUserRole("User"));
+            var existingUser = new User("existingUser", BCrypt.Net.BCrypt.HashPassword("hashedPassword"), "existing@example.com", User.ConvertToUserRole("User"));
 
             _userRepositoryMock.Setup(repo => repo.GetByEmail(newUser.Email))
                 .ReturnsAsync(existingUser);
@@ -84,10 +88,10 @@ namespace CoreTests.Services
         }
 
         [Theory]
-        [InlineData("", "email@example.com", "password", "User")] // Missing UserName
-        [InlineData("user", "", "password", "User")]             // Missing Email
+        [InlineData("", "email@example.com", "Password00@", "User")] // Missing UserName
+        [InlineData("user", "", "Password00@", "User")]             // Missing Email
         [InlineData("user", "email@example.com", "", "User")]    // Missing Password
-        [InlineData("user", "email@example.com", "password", "")]// Missing Role
+        [InlineData("user", "email@example.com", "Password00@", "")]// Missing Role
         public async Task CreateUser_ShouldThrowException_WhenRequiredFieldsAreMissing(
             string userName, string email, string password, string role)
         {
@@ -116,11 +120,10 @@ namespace CoreTests.Services
             {
                 UserName = "newUser",
                 Email = "new@example.com",
-                Password = "newPassword",
+                Password = "Password00@",
                 Role = "User"
             };
 
-            // Setup the repository mock to throw an exception
             _userRepositoryMock.Setup(repo => repo.GetByEmail(It.IsAny<string>()))
                 .ThrowsAsync(new Exception("Database error"));
 
@@ -130,7 +133,6 @@ namespace CoreTests.Services
             // Assert
             Assert.Equal($"An error occurred while registering the user with Email {newUser.Email}.", exception.Message);
 
-            // Verify that the logger was called with the expected message and exception
             _loggerMock.Verify(
                 x => x.Log(
                     LogLevel.Error,
@@ -141,7 +143,6 @@ namespace CoreTests.Services
                 ),
                 Times.Once);
 
-            // Verify that no user was added to the repository
             _userRepositoryMock.Verify(repo => repo.Add(It.IsAny<User>()), Times.Never);
         }
 

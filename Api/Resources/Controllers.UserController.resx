@@ -129,4 +129,31 @@
   <data name="InvalidCulture" xml:space="preserve">
     <value>InvalidCulture</value>
   </data>
+  <data name="ErrorDeletingUser" xml:space="preserve">
+    <value>ErrorDeletingUser</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Updated</value>
+  </data>
+  <data name="ErrorOcurred" xml:space="preserve">
+    <value>ErrorUpdatingUser</value>
+  </data>
+  <data name="DeletedSuccessfully" xml:space="preserve">
+    <value>DeletedSuccessfully</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>NotFound</value>
+  </data>
+  <data name="ErrorRetrievingUser" xml:space="preserve">
+    <value>ErrorRetrievingUser</value>
+  </data>
+  <data name="CompanyNotFound" xml:space="preserve">
+    <value>CompanyNotFound</value>
+  </data>
+  <data name="InvalidAuthToken" xml:space="preserve">
+    <value>InvalidAuthToken</value>
+  </data>
+  <data name="AlreadyActivated" xml:space="preserve">
+    <value>Already Activated</value>
+  </data>
 </root>

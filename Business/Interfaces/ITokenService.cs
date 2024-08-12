@@ -7,5 +7,6 @@ namespace Business.Interfaces
     {
         public string GenerateToken(User user);
         IEnumerable<Claim> GetTokenClaims(string token);
+        bool ValidateToken(string token);
     }
 }

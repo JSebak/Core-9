@@ -129,4 +129,31 @@
   <data name="InvalidCulture" xml:space="preserve">
     <value>Cultura invalida.</value>
   </data>
+  <data name="ErrorDeletingUser" xml:space="preserve">
+    <value>Error al borrar el usuario.</value>
+  </data>
+  <data name="Updated" xml:space="preserve">
+    <value>Actualizado con exito.</value>
+  </data>
+  <data name="ErrorOcurred" xml:space="preserve">
+    <value>Ha ocurrido un error.</value>
+  </data>
+  <data name="DeletedSuccessfully" xml:space="preserve">
+    <value>Borrado con exito.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Usuario no encontrado.</value>
+  </data>
+  <data name="ErrorRetrievingUser" xml:space="preserve">
+    <value>Error al buscar al usuario.</value>
+  </data>
+  <data name="CompanyNotFound" xml:space="preserve">
+    <value>Compañía no encontrada.</value>
+  </data>
+  <data name="InvalidAuthToken" xml:space="preserve">
+    <value>Token invalido.</value>
+  </data>
+  <data name="AlreadyActivated" xml:space="preserve">
+    <value>Usuario ya activado.</value>
+  </data>
 </root>

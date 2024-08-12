@@ -375,3 +375,4 @@ Api/[Bb]in/*
 /Business/bin/Debug/net9.0/Business.deps.json
 /CoreTests/obj/Debug/net9.0/CoreTests.csproj.FileListAbsolute.txt
 /Api/appsettings.json
+/Api/sqlite.db-shm

@@ -44,7 +44,19 @@ builder.Services.AddDbContext<UserDbContext>(options =>
 #region JWT
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+var tokenValidationParameters = new TokenValidationParameters
+{
+    ValidateIssuer = true,
+    ValidateAudience = true,
+    ValidateLifetime = true,
+    ValidateIssuerSigningKey = true,
+    ValidIssuer = jwtSettings["Issuer"],
+    ValidAudience = jwtSettings["Audience"],
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"])),
+    ClockSkew = TimeSpan.Zero
+};
 
+builder.Services.AddSingleton(tokenValidationParameters);
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -57,22 +69,12 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            // Read the token from the cookie
             context.Token = context.HttpContext.Request.Cookies["AuthToken"];
             return Task.CompletedTask;
         }
     };
 
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
-    };
+    options.TokenValidationParameters = tokenValidationParameters;
 });
 
 builder.Services.AddAuthorization();
@@ -95,7 +97,7 @@ builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -138,7 +140,6 @@ app.UseHttpsRedirection();
 var localizationOptions = app.Services.GetService<IOptions<RequestLocalizationOptions>>()!.Value;
 app.UseRequestLocalization(localizationOptions);
 
-//app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors("AllowAllOrigins");
 

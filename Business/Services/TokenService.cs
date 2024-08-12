@@ -13,10 +13,11 @@ namespace Business.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<TokenService> _logger;
-
-        public TokenService(IConfiguration configuration, ILogger<TokenService> logger)
+        private readonly TokenValidationParameters _tokenValidationParameters;
+        public TokenService(IConfiguration configuration, TokenValidationParameters tokenValidationParameters, ILogger<TokenService> logger)
         {
             _configuration = configuration;
+            _tokenValidationParameters = tokenValidationParameters;
             _logger = logger;
         }
 
@@ -73,16 +74,51 @@ namespace Business.Services
         public IEnumerable<Claim> GetTokenClaims(string token)
         {
             var handler = new JwtSecurityTokenHandler();
-
             try
             {
                 var jwtToken = handler.ReadJwtToken(token);
                 return jwtToken.Claims;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log exception if needed
+                _logger.LogError(ex, "An error occurred while retrieving the claims from the token.");
                 return null;
+            }
+        }
+
+        public bool ValidateToken(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            try
+            {
+                var principal = handler.ValidateToken(token, _tokenValidationParameters, out var validatedToken);
+
+                if (!(validatedToken is JwtSecurityToken jwtToken))
+                {
+                    return false;
+                }
+
+                if (jwtToken.ValidTo < DateTime.UtcNow)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (SecurityTokenExpiredException)
+            {
+                _logger.LogWarning("Token has expired.");
+                return false;
+            }
+            catch (SecurityTokenInvalidSignatureException)
+            {
+                _logger.LogWarning("Token has an invalid signature.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while validating the token.");
+                return false;
             }
         }
     }
