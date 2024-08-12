@@ -153,4 +153,7 @@
   <data name="InvalidAuthToken" xml:space="preserve">
     <value>InvalidAuthToken</value>
   </data>
+  <data name="AlreadyActivated" xml:space="preserve">
+    <value>Already Activated</value>
+  </data>
 </root>

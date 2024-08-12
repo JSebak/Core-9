@@ -129,12 +129,14 @@
   <data name="InvalidCulture" xml:space="preserve">
     <value>Invalid culture.</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="ErrorDeletingUser" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
+  <data name="ErrorDeletingUser" xml:space="preserve">
+    <value>Error deleting the user</value>
   </data>
   <data name="Updated" xml:space="preserve">
     <value>Updated.</value>
+  </data>
+  <data name="ErrorOcurred" xml:space="preserve">
+    <value>An error has ocurred.</value>
   </data>
   <data name="DeletedSuccessfully" xml:space="preserve">
     <value>Deleted successfully.</value>
@@ -142,13 +144,16 @@
   <data name="NotFound" xml:space="preserve">
     <value>Not Found.</value>
   </data>
-  <data name="ErrorRetrievingUser" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
+  <data name="ErrorRetrievingUser" xml:space="preserve">
+    <value>Error retrieving the user.</value>
   </data>
-  <data name="CompanyNotFound" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
+  <data name="CompanyNotFound" xml:space="preserve">
+    <value>Company not found.</value>
   </data>
   <data name="InvalidAuthToken" xml:space="preserve">
     <value>Invalid Token.</value>
+  </data>
+  <data name="AlreadyActivated" xml:space="preserve">
+    <value>Already activated.</value>
   </data>
 </root>
